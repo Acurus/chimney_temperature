@@ -1,10 +1,17 @@
 #include <ESP8266WiFi.h>
 #include <ArduinoMqttClient.h>
+#include "MAX6675.h"
 #include "arduino_secrets.h"
 
 
+#define dataPin 16
+#define selectPin 5
+#define clockPin 4
+
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
+MAX6675 thermoCouple(selectPin, dataPin, clockPin);
+
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 const char* mqtt_broker = MQTT_BROKER;
@@ -12,12 +19,26 @@ int mqtt_port = MQTT_PORT;
 const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
 const char topic[] = "chimney_temperature";
-int temperature = 0;
+double temperature = 0;
 
 void setup() {
   Serial.begin(115200);
 
-  // We start by connecting to a WiFi network
+  // Setup sensor
+  thermoCouple.begin();
+
+  uint8_t status = thermoCouple.read();
+  if (status != 0) Serial.println(status);
+  if (thermoCouple.getRawData() == 0xFFFF) {
+    Serial.println("NO COMMUNICATION");
+  }
+
+  thermoCouple.setSPIspeed(4000000);
+  thermoCouple.setOffset(0);
+  temperature = thermoCouple.getTemperature();
+
+
+  // Connecting to WiFi network
 
   Serial.println();
   Serial.println();
@@ -67,6 +88,9 @@ void loop() {
   delay(1000);
 }
 
-float readTemperature() {
-  return 10;
+double readTemperature() {
+  int status = thermoCouple.read();
+  double temperature = thermoCouple.getTemperature();
+ 
+  return temperature;
 }
