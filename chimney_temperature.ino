@@ -76,7 +76,7 @@ void setup() {
 }
 
 void loop() {
-  temperature = readTemperature();
+  temperature = measureTemperature(10000, 500);
 
   Serial.print("Temperature = ");
   Serial.println(temperature);
@@ -88,9 +88,19 @@ void loop() {
   delay(1000);
 }
 
-double readTemperature() {
-  int status = thermoCouple.read();
-  double temperature = thermoCouple.getTemperature();
- 
-  return temperature;
+double measureTemperature(int measureTimeMs, int delayTimeMs) {
+  int timer = 0;
+  double minTemp = 10000;
+  double temperature;
+  while (timer < measureTimeMs)
+  {
+    temperature = thermoCouple.getTemperature();
+    if (temperature < minTemp) {
+      minTemp = temperature;
+    }
+    delay(delayTimeMs);
+    timer += (delayTimeMs);
+  }
+
+  return minTemp;
 }
