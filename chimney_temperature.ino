@@ -4,13 +4,11 @@
 #include "arduino_secrets.h"
 
 
-#define dataPin 16
-#define selectPin 5
-#define clockPin 4
+const int selectPin = 5;
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
-MAX6675 thermoCouple(selectPin, dataPin, clockPin);
+MAX6675 thermoCouple(selectPin, &SPI);
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
@@ -21,22 +19,40 @@ const char* mqtt_password = MQTT_PASSWORD;
 const char topic[] = "chimney_temperature";
 double temperature = 0;
 
+struct StatusInfo {
+  int value;
+  const char* description;
+};
+
+StatusInfo statusTable[] = {
+  { 0, "OK" },
+  { 4, "Thermocouple short to VCC" },
+  { 128, "No read done yet" },
+  { 129, "No communication" }
+};
+
+const char* getStatusDescription(int value) {
+  for (int i = 0; i < sizeof(statusTable) / sizeof(StatusInfo); i++) {
+    if (statusTable[i].value == value) {
+      return statusTable[i].description;
+    }
+  }
+  return "Unknown status";
+}
+
 void setup() {
   Serial.begin(115200);
 
+
+  SPI.begin();
   // Setup sensor
   thermoCouple.begin();
 
   uint8_t status = thermoCouple.read();
   if (status != 0) Serial.println(status);
-  if (thermoCouple.getRawData() == 0xFFFF) {
-    Serial.println("NO COMMUNICATION");
-  }
 
   thermoCouple.setSPIspeed(4000000);
   thermoCouple.setOffset(0);
-  temperature = thermoCouple.getTemperature();
-
 
   // Connecting to WiFi network
 
@@ -76,31 +92,33 @@ void setup() {
 }
 
 void loop() {
-  temperature = measureTemperature(10000, 500);
-
-  Serial.print("Temperature = ");
-  Serial.println(temperature);
-
-  mqttClient.beginMessage(topic);
-  mqttClient.print(temperature);
-  mqttClient.endMessage();
-
-  delay(1000);
-}
-
-double measureTemperature(int measureTimeMs, int delayTimeMs) {
-  int timer = 0;
-  double minTemp = 10000;
-  double temperature;
-  while (timer < measureTimeMs)
-  {
+  // temperature = measureTemperature(10, 200);
+  uint8_t status = thermoCouple.read();
+  if (status == 0) {
     temperature = thermoCouple.getTemperature();
-    if (temperature < minTemp) {
-      minTemp = temperature;
-    }
-    delay(delayTimeMs);
-    timer += (delayTimeMs);
+
+    Serial.print("Temperature = ");
+    Serial.println(temperature);
+
+    mqttClient.beginMessage(topic);
+    mqttClient.print(temperature);
+    mqttClient.endMessage();
+  } else {
+    Serial.print("Status: ");
+    Serial.println(getStatusDescription(status));
   }
 
-  return minTemp;
+  delay(500);
+}
+
+double measureTemperature(int averageOfMeasurments, int timeBetweenMeasurments) {
+
+  double sum = 0;
+  for (int i; i < averageOfMeasurments; i++) {
+    uint8_t status = thermoCouple.read();
+    sum += thermoCouple.getTemperature();
+    delay(timeBetweenMeasurments);
+  }
+
+  return (sum / averageOfMeasurments);
 }
