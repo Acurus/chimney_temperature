@@ -95,7 +95,8 @@ void loop() {
   // temperature = measureTemperature(10, 200);
   uint8_t status = thermoCouple.read();
   if (status == 0) {
-    temperature = thermoCouple.getTemperature();
+    //temperature = thermoCouple.getTemperature();
+    temperature = measureTemperature(4, 500);
 
     Serial.print("Temperature = ");
     Serial.println(temperature);
@@ -108,7 +109,7 @@ void loop() {
     Serial.println(getStatusDescription(status));
   }
 
-  delay(500);
+  delay(58000);
 }
 
 double measureTemperature(int averageOfMeasurments, int timeBetweenMeasurments) {
