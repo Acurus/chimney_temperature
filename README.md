@@ -11,3 +11,14 @@ create an arduino_secrets.h file with the following content:
 #define MQTT_USERNAME 
 #define MQTT_PASSWORD 
 ```
+
+# Hardware
+* ESP8266 (NodeMCU V3)
+* MAX6675 Module + K Type Thermocouple
+
+# Wireing
+MAX6675 SO (Signal out) -> ESP8266 D6
+MAX6675 CS (Chip Select) -> ESP8266 D1
+MAX6675 CLK (Clock) -> ESP8266 D5
+MAX6675 VCC (Voltage) -> ESP8266 3V3
+MAX6675 GND (Ground) -> ESP8266 GND
