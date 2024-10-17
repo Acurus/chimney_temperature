@@ -1,5 +1,5 @@
 # Overview
-Arduino skectch for reading chimney temperature and sending it over MQTT.
+Arduino skectch for reading temperature with a K type Thremocouple and sending it over MQTT.
 
 create an arduino_secrets.h file with the following content: 
 
@@ -16,7 +16,7 @@ create an arduino_secrets.h file with the following content:
 * ESP8266 (NodeMCU V3)
 * MAX6675 Module + K Type Thermocouple
 
-# Wireing
+# Wiring
 MAX6675 SO (Signal out) -> ESP8266 D6
 MAX6675 CS (Chip Select) -> ESP8266 D1
 MAX6675 CLK (Clock) -> ESP8266 D5
