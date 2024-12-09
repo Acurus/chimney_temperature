@@ -4,6 +4,9 @@
 #include "arduino_secrets.h"
 
 const int selectPin = 5;
+const int SENSOR_READ_DELAY = 500;
+const int AVERAGE_COUNT = 4;
+const unsigned long MEASUREMENT_INTERVAL = 58000; // ms
 
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
@@ -17,6 +20,8 @@ const char *mqtt_username = MQTT_USERNAME;
 const char *mqtt_password = MQTT_PASSWORD;
 const char topic[] = "chimney_temperature";
 double temperature = 0;
+
+
 
 struct StatusInfo
 {
@@ -95,39 +100,76 @@ void setup()
   Serial.println();
 }
 
+unsigned long lastTemperatureCheck = 0;
+
 void loop()
 {
-  uint8_t status = thermoCouple.read();
-  if (status == 0)
+  if (!mqttClient.connected())
   {
-    temperature = measureTemperature(4, 500);
-
-    Serial.print("Temperature = ");
-    Serial.println(temperature);
-
-    mqttClient.beginMessage(topic);
-    mqttClient.print(temperature);
-    mqttClient.endMessage();
+    Serial.println("MQTT disconnected. Attempting to reconnect...");
+    while (!mqttClient.connect(mqtt_broker, mqtt_port))
+    {
+      delay(1000);
+    }
   }
-  else
+  
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastTemperatureCheck >= MEASUREMENT_INTERVAL);
   {
-    Serial.print("Status: ");
-    Serial.println(getStatusDescription(status));
+    lastTemperatureCheck = currentMillis;
+
+    uint8_t status = thermoCouple.read();
+    if (status == 0)
+    {
+      temperature = measureTemperature(AVERAGE_COUNT, SENSOR_READ_DELAY);
+
+      if (!isnan(temperature))
+      {
+        Serial.print("Temperature = ");
+        Serial.println(temperature);
+
+        mqttClient.beginMessage(topic);
+        mqttClient.print(temperature);
+        mqttClient.endMessage();
+      }
+      else
+      {
+        Serial.println("Invalid temperature measurement.");
+      }
+    }
+    else
+    {
+      Serial.print("Sensor error: ");
+      Serial.println(getStatusDescription(status));
+    }
   }
 
-  delay(58000);
+  mqttClient.poll(); // Handle MQTT messages and keep the connection alive
 }
 
-double measureTemperature(int averageOfMeasurments, int timeBetweenMeasurments)
+double measureTemperature(int averageOfMeasurements, int timeBetweenMeasurements)
 {
-
   double sum = 0;
-  for (int i; i < averageOfMeasurments; i++)
+  int validReadings = 0;
+
+  for (int i = 0; i < averageOfMeasurements; i++)
   {
     uint8_t status = thermoCouple.read();
-    sum += thermoCouple.getTemperature();
-    delay(timeBetweenMeasurments);
+    if (status == 0) // Only add valid readings
+    {
+      sum += thermoCouple.getTemperature();
+      validReadings++;
+    }
+    else
+    {
+      Serial.print("Skipping measurement due to error: ");
+      Serial.println(getStatusDescription(status));
+    }
+    delay(timeBetweenMeasurements);
   }
 
-  return (sum / averageOfMeasurments);
+  if (validReadings > 0)
+    return (sum / validReadings);
+  else
+    return NAN; // Return NaN if no valid readings were taken
 }
