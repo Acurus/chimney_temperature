@@ -114,7 +114,7 @@ void loop()
   }
   
   unsigned long currentMillis = millis();
-  if (currentMillis - lastTemperatureCheck >= MEASUREMENT_INTERVAL);
+  if ((currentMillis - lastTemperatureCheck) >= MEASUREMENT_INTERVAL)
   {
     lastTemperatureCheck = currentMillis;
 
