@@ -9,6 +9,14 @@ pio run -t upload       # flash the NodeMCU
 pio device monitor      # serial monitor (115200 baud)
 ```
 
+PlatformIO Core runs from `~/.platformio/penv`. To build that environment on a uv-managed Python, so it doesn't break when the system Python is upgraded:
+
+```
+uv python install 3.11
+uv venv --python 3.11 --python-preference only-managed --seed ~/.platformio/penv
+VIRTUAL_ENV=~/.platformio/penv uv pip install platformio
+```
+
 Copy `include/arduino_secrets.h.example` to `include/arduino_secrets.h` and fill in your values. It needs the following content:
 
 ```
