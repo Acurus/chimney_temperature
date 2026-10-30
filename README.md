@@ -1,7 +1,15 @@
 # Overview
 Arduino skectch for reading temperature with a K type Thremocouple and sending it over MQTT.
 
-create an arduino_secrets.h file with the following content: 
+This is a [PlatformIO](https://platformio.org/) project. Open the folder in VS Code with the PlatformIO IDE extension, or use the CLI:
+
+```
+pio run                 # build
+pio run -t upload       # flash the NodeMCU
+pio device monitor      # serial monitor (115200 baud)
+```
+
+Copy `include/arduino_secrets.h.example` to `include/arduino_secrets.h` and fill in your values. It needs the following content:
 
 ```
 #define WIFI_SSID 
@@ -13,6 +21,8 @@ create an arduino_secrets.h file with the following content:
 ```
 
 # Libraries
+Installed automatically by PlatformIO via `lib_deps` in `platformio.ini`.
+
 * [ArduinoMqttClient](https://github.com/arduino-libraries/ArduinoMqttClient)
 
 * [MAX6675](https://github.com/RobTillaart/MAX6675)

@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ArduinoMqttClient.h>
 #include "MAX6675.h"
@@ -20,6 +21,8 @@ const char *mqtt_username = MQTT_USERNAME;
 const char *mqtt_password = MQTT_PASSWORD;
 const char topic[] = "chimney_temperature";
 double temperature = 0;
+
+double measureTemperature(int averageOfMeasurements, int timeBetweenMeasurements);
 
 
 
